@@ -130,9 +130,9 @@ include("ECCO/ECCO.jl")
 include("MO/MO.jl")
 #include("IFS/IFS.jl")
 
+using .MO
 using .ECCO
 using .JRA55
-using .MO
 #using .IFS
 
 end # module

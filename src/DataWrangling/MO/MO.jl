@@ -32,6 +32,7 @@ end
 
 include("MO_metadata.jl")
 include("MO_mask.jl")
+include("MO_restoring.jl")
 
 # Vertical coordinate
 #const ECCO_z = [
@@ -324,7 +325,6 @@ function set!(field::Field, MO_metadata::MOMetadatum; kw...)
     return field
 end
 
-include("MO_restoring.jl")
 
 end # Module 
 
