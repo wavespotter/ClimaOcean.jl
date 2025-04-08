@@ -18,10 +18,10 @@ function read_netcdf(infile::String, varname::String)
     var = ds[varname]
 
     # load all data
-    data = var[:,:]
+    data = var[:,:,:]
 
     # load all data ignoring attributes like scale_factor, add_offset, _FillValue and time units
-    #data2 = var.var[:,:];
+    #data2 = var.var[:,:,:];
 
     close(ds)
 
@@ -35,12 +35,16 @@ function read_IFSforecast(;
 			  HH::String = "00", 
 			  datadir::String = "/fsx/climaocean/data", 
 			  model::String = "ECMWFHRes", 
-			  forecast_hour::String = "000"
+			  forecast_hour = nothing
 			  )
 
     println("read_IFSforecast: Loading variable: $varname...")
 
-    infile_prefix="$datadir/$model.$YYYYMMDD.$HH.f$forecast_hour"
+    if forecast_hour == nothing
+        infile_prefix="$datadir/$model.$YYYYMMDD.$HH.full_forecast"
+    else
+        infile_prefix="$datadir/$model.$YYYYMMDD.$HH.f$forecast_hour"
+    end
 
     infile = "$infile_prefix.$varname.nc"
     data = read_netcdf(infile, varname)
