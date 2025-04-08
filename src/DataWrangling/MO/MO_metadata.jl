@@ -25,10 +25,10 @@ const MOMetadatum   = Metadatum{<:Union{<:MOMonthly, <:MODaily}}
 an alias to construct a [`Metadatum`](@ref) of [`MO4Montly`](@ref)
 """
 function MOMetadatum(name; 
-                       date = first_date(MO4Monthly()), 
+                       date = first_date(MOMonthly()), 
                        dir = download_MO_cache)
   
-    return Metadatum(name; date, dir, dataset=MO4Monthly())
+    return Metadatum(name; date, dir, dataset=MOMonthly())
 end
 
 default_download_directory(::Union{<:MOMonthly, <:MODaily}) = download_MO_cache
@@ -63,7 +63,7 @@ function metadata_filename(metadata::Metadatum{<:MOMonthly})
     return shortname * "_" * yearstr * "_" * monthstr * ".nc"
 end
 
-function metadata_filename(metadata::Metadatum{<:Union{MO2Daily, MO2Monthly}})
+function metadata_filename(metadata::Metadatum{<:Union{MODaily, MOMonthly}})
     shortname   = short_name(metadata)
     yearstr  = string(Dates.year(metadata.dates))
     monthstr = string(Dates.month(metadata.dates), pad=2)
