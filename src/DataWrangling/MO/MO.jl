@@ -1,7 +1,7 @@
 module MO
 
 export MOMetadatum, MO_field, MO_mask, MO_immersed_grid, adjusted_MO_tracers, initialize!
-export MO2Monthly, MO4Monthly, MO2Daily
+export MOMonthly, MODaily
 export MOFieldTimeSeries, MORestoring, LinearlyTaperedPolarMask
 
 using ClimaOcean
