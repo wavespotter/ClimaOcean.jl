@@ -127,8 +127,12 @@ include("metadata.jl")
 include("inpaint_mask.jl")
 include("JRA55/JRA55.jl")
 include("ECCO/ECCO.jl")
+include("MO/MO.jl")
+include("IFS/IFS.jl")
 
 using .ECCO
 using .JRA55
+using .MO
+using .IFS
 
 end # module
