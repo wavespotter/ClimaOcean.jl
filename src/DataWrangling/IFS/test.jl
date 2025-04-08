@@ -9,8 +9,8 @@ model="ECMWFHRes"
 forecast_hour="000"
 
 infile_prefix="$datadir/$model.$YYYYMMDD.$HH.f$forecast_hour"
-infile="$infile_prefix.$varname.nc"
-ds = read_netcdf(infile, varname)
+#infile="$infile_prefix.$varname.nc"
+#ds = read_netcdf(infile, varname)
 
 var_array = [ "airTemperature", "airDensity", "meanSeaLevelPressure", "precipitationRate", "seaSurfaceTemperature", "windVelocity10MeterEastward", "windVelocity10MeterNorthward" ]
 

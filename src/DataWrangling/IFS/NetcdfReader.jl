@@ -7,10 +7,9 @@ function read_netcdf(infile, varname)
 
     println("read_netcdf:: reading infile = $infile using varname = $varname")
 
-    # Show listing of the netcdf file
-#   NCDataset(infile,"r")
-
     ds = NCDataset(infile,"r")
+    #
+    # Show listing of the netcdf file
     display(ds)
 #   var_ds = ds[varname]
 
