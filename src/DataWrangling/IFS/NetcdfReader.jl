@@ -1,25 +1,17 @@
 module NetcdfReader
 
 export read_netcdf
-
-#using Oceananigans
 using NCDatasets
 
-#using Dates: AbstractTime, UTC, now
-#using Printf: @sprintf
-
-#using Oceananigans.Fields
-
 function read_netcdf(infile, varname)
-    #
-    # The mode "r" stands for read-only. The mode "r" is the default mode and the parameter can be omitted.
-    #
+
     println("read_netcdf:: reading infile = $infile using varname = $varname")
 
     # Show listing of the netcdf file
-    NCDataset(infile,"r")
+#   NCDataset(infile,"r")
 
     ds = NCDataset(infile,"r")
+    display(ds)
 #   var_ds = ds[varname]
 
     # load a subset
