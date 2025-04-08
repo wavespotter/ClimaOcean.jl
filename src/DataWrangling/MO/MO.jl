@@ -137,7 +137,7 @@ const_MO = [
     4405.224, 
     4833.291, 
     5274.784,     
-    5727.917 ;
+    5727.917, 
 ]
 
 empty_MO_field(variable_name::Symbol; kw...) = empty_MO_field(Metadatum(variable_name, dataset=MO4Monthly()); kw...)
