@@ -32,7 +32,6 @@ end
 
 include("MO_metadata.jl")
 include("MO_mask.jl")
-include("MO_restoring.jl")
 
 # Vertical coordinate
 #const ECCO_z = [
@@ -89,59 +88,59 @@ include("MO_restoring.jl")
 #      0.0,
 #]
 const MO_z = [
-    0.494025, 
-    1.541375, 
-    2.645669, 
-    3.819495, 
-    5.078224, 
-    6.440614, 
-    7.92956,     
-    9.572997, 
-    11.405, 
-    13.46714,
-    15.81007, 
-    18.49556, 
-    21.59882, 
-    25.21141,     
-    29.44473, 
-    34.43415, 
-    40.34405, 
-    47.37369, 
-    55.76429, 
-    65.80727, 
-    77.85385,     
-    92.32607, 
-    109.7293, 
-    130.666, 
-    155.8507, 
-    186.1256, 
-    222.4752, 
-    266.0403,     
-    318.1274, 
-    380.213, 
-    453.9377, 
-    541.0889, 
-    643.5668, 
-    763.3331, 
-    902.3393,     
+    0.49,
+    1.54,
+    2.64,
+    3.81,
+    5.07,
+    6.44,
+    7.92   
+    9.57,
+    11.40, 
+    13.46,
+    15.81,
+    18.49,
+    21.59,
+    25.21,   
+    29.44,
+    34.43,
+    40.34,
+    47.37,
+    55.76,
+    65.80,
+    77.85,   
+    92.32,
+    109.72,
+    130.66, 
+    155.85,
+    186.12,
+    222.47,
+    266.04,   
+    318.12,
+    380.21, 
+    453.93,
+    541.08,
+    643.56,
+    763.33,
+    902.33,   
     1062.44, 
-    1245.291, 
-    1452.251, 
-    1684.284, 
-    1941.893, 
-    2225.078, 
-    2533.336,    
-    2865.703, 
+    1245.29,
+    1452.25,
+    1684.28,
+    1941.89,
+    2225.07,
+    2533.33,  
+    2865.70,
     3220.82, 
-    3597.032, 
-    3992.484, 
-    4405.224, 
-    4833.291, 
-    5274.784,     
-    5727.917, 
+    3597.03,
+    3992.48,
+    4405.22,
+    4833.29,
+    5274.78,   
+    5727.91,
 ]
 
-empty_MO_field(variable_name::Symbol; kw...) = empty_MO_field(Metadatum(variable_name, dataset=MO4Monthly()); kw...)
+empty_MO_field(variable_name::Symbol; kw...) = empty_MO_field(Metadatum(variable_name, dataset=MOMonthly()); kw...)
 
 function empty_MO_field(metadata::MOMetadata;
                           architecture = CPU(), 
@@ -254,7 +253,7 @@ function MO_field(metadata::MOMetadata;
     # MO4 data is on a -180, 180 longitude grid as opposed to MO2 data that
     # is on a 0, 360 longitude grid. To make the data consistent, we shift MO4
     # data by 180 degrees in longitude
-    if metadata.dataset isa MO4Monthly 
+    if metadata.dataset isa MOMonthly 
         Nx = size(data, 1)
         if variable_is_three_dimensional(metadata)
             shift = (Nx ÷ 2, 0, 0)
@@ -325,6 +324,7 @@ function set!(field::Field, MO_metadata::MOMetadatum; kw...)
     return field
 end
 
+include("MO_restoring.jl")
 
 end # Module 
 
