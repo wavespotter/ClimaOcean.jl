@@ -18,6 +18,8 @@ export
     PrescribedAtmosphere,
     JRA55PrescribedAtmosphere,
     JRA55NetCDFBackend,
+    IFSPrescribedAtmosphere,
+    IFSNetCDFBackend,
     regrid_bathymetry,
     retrieve_bathymetry,
     stretched_vertical_faces,
