@@ -27,12 +27,15 @@ export
     Metadata,
     Metadatum,
     ECCOMetadatum,
+    MOMetadatum,
     first_date,
     last_date,
     all_dates,
     JRA55FieldTimeSeries,
     ECCO_field, 
     ECCORestoring,
+    MO_field, 
+    MORestoring,
     LinearlyTaperedPolarMask,
     ocean_simulation,
     sea_ice_simulation,
@@ -89,11 +92,12 @@ using .InitialConditions
 using .OceanSeaIceModels
 using .OceanSimulations
 using .SeaIceSimulations
-using .DataWrangling: JRA55, ECCO
+using .DataWrangling: JRA55, ECCO, MO
 
 using ClimaOcean.OceanSeaIceModels: PrescribedAtmosphere
 using ClimaOcean.DataWrangling.JRA55: JRA55PrescribedAtmosphere, JRA55NetCDFBackend
 using ClimaOcean.DataWrangling.ECCO
+using ClimaOcean.DataWrangling.MO
 
 using PrecompileTools: @setup_workload, @compile_workload
 

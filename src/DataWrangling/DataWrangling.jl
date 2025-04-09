@@ -1,6 +1,6 @@
 module DataWrangling
 
-export Metadata, Metadatum, ECCOMetadatum, all_dates, first_date, last_date
+export Metadata, Metadatum, MOMetadatum, ECCOMetadatum, all_dates, first_date, last_date
 
 using Oceananigans
 using Downloads
@@ -128,7 +128,9 @@ include("inpaint_mask.jl")
 include("JRA55/JRA55.jl")
 include("IFS/IFS.jl")
 include("ECCO/ECCO.jl")
+include("MO/MO.jl")
 
+using .MO
 using .ECCO
 using .JRA55
 using .IFS
