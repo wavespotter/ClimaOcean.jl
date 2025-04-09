@@ -15,33 +15,49 @@ import Oceananigans.Fields: set!, location
 import ClimaOcean.DataWrangling: all_dates, metadata_filename, download_dataset, default_download_directory
 
 struct MultiYearIFS end
-struct RepeatYearIFS end
+struct HourlyIFS end
 
-const IFSMetadata{D} = Metadata{<:Union{<:MultiYearIFS, <:RepeatYearIFS}, D}
-const IFSMetadatum   = Metadatum{<:Union{<:MultiYearIFS, <:RepeatYearIFS}}
+const IFSMetadata{D} = Metadata{<:Union{<:MultiYearIFS, <:HourlyIFS}, D}
+const IFSMetadatum   = Metadatum{<:Union{<:MultiYearIFS, <:HourlyIFS}}
 
-default_download_directory(::Union{<:MultiYearIFS, <:RepeatYearIFS}) = download_IFS_cache
+# ===============================================================================
+# STEVE:HARDCODED
+const varname::String = "seaSurfaceTemperature"
+const YYYYMMDD::String = "20250318"
+const HH::String = "00"
+const year::Int = 2025
+const month::Int = 3
+const day::Int = 18
+const hour::Int = 0
+const datadir::String = "/fsx/climaocean/data"
+const model::String = "ECMWFHRes"
+const forecast_hour = nothing
+const nlon::Int = 1440
+const nlat::Int = 721
+const forecast_days::Int = 3
+# ===============================================================================
 
-Base.size(data::IFSMetadata) = (640, 320, length(data.dates))
-Base.size(::IFSMetadatum)    = (640, 320, 1)
+default_download_directory(::Union{<:MultiYearIFS, <:HourlyIFS}) = download_IFS_cache
+
+# STEVE:HARDCODED
+Base.size(data::IFSMetadata) = (nlon, nlat, length(data.dates))
+Base.size(::IFSMetadatum)    = (nlon, nlat, 1)
 
 # IFS is a spatially 2D dataset
 variable_is_three_dimensional(data::IFSMetadata) = false
 
 # The whole range of dates in the different dataset datasets
 # NOTE! rivers and icebergs have a different frequency! (typical IFS data is three-hourly while rivers and icebergs are daily)
-function all_dates(::RepeatYearIFS, name)
+function all_dates(::HourlyIFS, name)
     if name == :river_freshwater_flux || name == :iceberg_freshwater_flux
         return DateTime(1990, 1, 1) : Day(1) : DateTime(1990, 12, 31)
     else
-        return DateTime(1990, 1, 1) : Hour(3) : DateTime(1990, 12, 31, 23, 59, 59)
+        return DateTime(year, month, day, hour, 0, 0) : Hour(1) : DateTime(year, month, day+forecast_days, hour, 0, 0)
+	# Hourly 1-90 (3.75 days)
+	# 3-hourly 93-145
+	# 6-hourly 145-240
     end
 end
-
-all_dates(::MultiYearIFS, name) = IFS_multiple_year_dates[name]
-
-# Fallback, if we not provide the name, take the highest frequency
-all_dates(dataset::Union{<:MultiYearIFS, <:RepeatYearIFS}) = all_dates(dataset, :temperature)
 
 # Valid for all IFS datasets
 function IFS_time_indices(dataset, dates, name)
@@ -57,32 +73,25 @@ function IFS_time_indices(dataset, dates, name)
 end
 
 # File name generation specific to each Dataset dataset
-# Note that `RepeatYearIFS` has only one file associated, so we can define
+# Note that `HourlyIFS` has only one file associated, so we can define
 # the filename directly for the whole `Metadata` object, independent of the `dates`
-function metadata_filename(metadata::Metadata{<:RepeatYearIFS}) # No difference 
+function metadata_filename(metadata::Metadata{<:HourlyIFS}) # No difference 
+
+#   shortname::String = "seaSurfaceTemperature",
+#   YYYYMMDD::String = "20250318",
+#   HH::String = "00",
+#   datadir::String = "/fsx/climaocean/data",
+#   model::String = "ECMWFHRes",
+#   forecast_hour = nothing
+
     shortname = short_name(metadata)
-    return "RYF." * shortname * ".1990_1991.nc"
+ 
+    infile_prefix="$datadir/$model.$YYYYMMDD.$HH.full_forecast"
+    infile = "$infile_prefix.$shortname.nc"
+
+    return infile
 end
 
-function metadata_filename(metadata::Metadatum{<:MultiYearIFS})
-    # fix the filename
-    shortname = short_name(metadata)
-    year      = Dates.year(metadata.dates)
-    suffix    = "_input4MIPs_atmosphericState_OMIP_MRI-IFS-do-1-5-0_gr_"
-
-    end_date = last(IFS_multiple_year_dates[metadata.name])
-    end_hour = Hour(end_date)
-
-    if end_hour == Hour(0)
-        dates = "$(year)0101-$(year)1231"
-    elseif end_hour == Hour(22)
-        dates = "$(year)01010130-$(year)12312230"
-    else
-        dates = "$(year)01010000-$(year)12312100"
-    end
-
-    return shortname * suffix * dates * ".nc"
-end
 
 # Convenience functions
 short_name(data::IFSMetadata) = IFS_short_names[data.name]
@@ -101,49 +110,22 @@ IFS_variable_names = (:river_freshwater_flux,
                         :eastward_velocity,
                         :northward_velocity)
 
+
+# var_array=( 'airTemperature' 'meanSeaLevelPressure' 'precipitationRate' 'windVelocity10MeterEastward' 'windVelocity10MeterNorthward' )
 IFS_short_names = Dict(
     :river_freshwater_flux           => "friver",   # Freshwater fluxes from rivers
     :rain_freshwater_flux            => "prra",     # Freshwater flux from rainfall
     :snow_freshwater_flux            => "prsn",     # Freshwater flux from snowfall
     :iceberg_freshwater_flux         => "licalvf",  # Freshwater flux from calving icebergs
     :specific_humidity               => "huss",     # Surface specific humidity
-    :sea_level_pressure              => "psl",      # Sea level pressure
+    :sea_level_pressure              => "meanSeaLevelPressure",      # Sea level pressure
     :downwelling_longwave_radiation  => "rlds",     # Downwelling longwave radiation
     :downwelling_shortwave_radiation => "rsds",     # Downwelling shortwave radiation
-    :temperature                     => "tas",      # Near-surface air temperature
-    :eastward_velocity               => "uas",      # Eastward near-surface wind
-    :northward_velocity              => "vas",      # Northward near-surface wind
+    :temperature                     => "airTemperature",      # Near-surface air temperature
+    :eastward_velocity               => "windVelocity10MeterEastward",      # Eastward near-surface wind
+    :northward_velocity              => "windVelocity10MeterNorthward",      # Northward near-surface wind
 )
 
-IFS_multiple_year_url = "https://esgf-data2.llnl.gov/thredds/fileServer/user_pub_work/input4MIPs/CMIP6/OMIP/MRI/MRI-IFS-do-1-5-0/"
-
-IFS_multiple_year_prefix = Dict(
-    :river_freshwater_flux           => "land/day",
-    :rain_freshwater_flux            => "atmos/3hr",
-    :snow_freshwater_flux            => "atmos/3hr",
-    :iceberg_freshwater_flux         => "landIce/day",
-    :specific_humidity               => "atmos/3hrPt",
-    :sea_level_pressure              => "atmos/3hrPt",
-    :downwelling_longwave_radiation  => "atmos/3hr",
-    :downwelling_shortwave_radiation => "atmos/3hr",
-    :temperature                     => "atmos/3hrPt",
-    :eastward_velocity               => "atmos/3hrPt",
-    :northward_velocity              => "atmos/3hrPt",
-)
-
-IFS_multiple_year_dates = Dict(
-    :river_freshwater_flux           => DateTime(1958, 1, 1)        : Day(1)  : DateTime(2019, 12, 31),
-    :rain_freshwater_flux            => DateTime(1958, 1, 1, 1, 30) : Hour(3) : DateTime(2019, 12, 31, 22, 30),
-    :snow_freshwater_flux            => DateTime(1958, 1, 1, 1, 30) : Hour(3) : DateTime(2019, 12, 31, 22, 30),
-    :iceberg_freshwater_flux         => DateTime(1958, 1, 1)        : Day(1)  : DateTime(2019, 12, 31),
-    :specific_humidity               => DateTime(1958, 1, 1)        : Hour(3) : DateTime(2019, 12, 31, 21),
-    :sea_level_pressure              => DateTime(1958, 1, 1)        : Hour(3) : DateTime(2019, 12, 31, 21),
-    :downwelling_longwave_radiation  => DateTime(1958, 1, 1, 1, 30) : Hour(3) : DateTime(2019, 12, 31, 22, 30),
-    :downwelling_shortwave_radiation => DateTime(1958, 1, 1, 1, 30) : Hour(3) : DateTime(2019, 12, 31, 22, 30),
-    :temperature                     => DateTime(1958, 1, 1)        : Hour(3) : DateTime(2019, 12, 31, 21),
-    :eastward_velocity               => DateTime(1958, 1, 1)        : Hour(3) : DateTime(2019, 12, 31, 21),
-    :northward_velocity              => DateTime(1958, 1, 1)        : Hour(3) : DateTime(2019, 12, 31, 21)
-)
 
 IFS_repeat_year_urls = Dict(
     :shortwave_radiation => "https://www.dropbox.com/scl/fi/z6fkvmd9oe3ycmaxta131/" *
@@ -164,8 +146,7 @@ IFS_repeat_year_urls = Dict(
     :specific_humidity => "https://www.dropbox.com/scl/fi/66z6ymfr4ghkynizydc29/" *
                           "RYF.huss.1990_1991.nc?rlkey=107yq04aew8lrmfyorj68v4td&dl=0",
 
-    :sea_level_pressure => "https://www.dropbox.com/scl/fi/0fk332027oru1iiseykgp/" *
-                           "RYF.psl.1990_1991.nc?rlkey=4xpr9uah741483aukok6d7ctt&dl=0",
+    :sea_level_pressure => nothing,
 
     :downwelling_longwave_radiation  => "https://www.dropbox.com/scl/fi/y6r62szkirrivua5nqq61/" *
                                         "RYF.rlds.1990_1991.nc?rlkey=wt9yq3cyrvs2rbowoirf4nkum&dl=0",
@@ -173,34 +154,34 @@ IFS_repeat_year_urls = Dict(
     :downwelling_shortwave_radiation => "https://www.dropbox.com/scl/fi/z6fkvmd9oe3ycmaxta131/" *
                                         "RYF.rsds.1990_1991.nc?rlkey=r7q6zcbj6a4fxsq0f8th7c4tc&dl=0",
 
-    :temperature => "https://www.dropbox.com/scl/fi/fpl0npwi476w635g6lke9/" *
-                    "RYF.tas.1990_1991.nc?rlkey=0skb9pe6lgbfbiaoybe7m945s&dl=0",
+    :temperature => nothing,
 
-    :eastward_velocity => "https://www.dropbox.com/scl/fi/86wetpqla2x97isp8092g/" *
-                          "RYF.uas.1990_1991.nc?rlkey=rcaf18sh1yz0v9g4hjm1249j0&dl=0",
+    :eastward_velocity => nothing,
 
-    :northward_velocity => "https://www.dropbox.com/scl/fi/d38sflo9ddljstd5jwgml/" *
-                           "RYF.vas.1990_1991.nc?rlkey=f9y3e57kx8xrb40gbstarf0x6&dl=0",
+    :northward_velocity => nothing,
 )
 
-metadata_url(metadata::Metadata{<:RepeatYearIFS}) = IFS_repeat_year_urls[metadata.name]  
-
-function metadata_url(m::Metadata{<:MultiYearIFS}) 
-    prefix = IFS_multiple_year_prefix[m.name]
-    return IFS_multiple_year_url * prefix * "/" * short_name(m) * "/gr/v20200916/" * metadata_filename(m)
-end
+metadata_url(metadata::Metadata{<:HourlyIFS}) = IFS_repeat_year_urls[metadata.name]  
 
 function download_dataset(metadata::IFSMetadata)
 
     @root for metadatum in metadata
 
         fileurl  = metadata_url(metadatum)
+
+	#STEVE: if the file url is 'nothing', then we're going to use the ECMWF IFS HRES forecast instead for that field
+        if fileurl == nothing
+            #STEVE: assume we've already downloaded the data to the desired storage location
+	    continue
+	end
+
         filepath = metadata_path(metadatum)
 
         if !isfile(filepath)
             Downloads.download(fileurl, filepath; progress=download_progress)
         end
     end
+ 
 
     return nothing
 end

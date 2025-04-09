@@ -1,6 +1,6 @@
 module IFS
 
-export IFSFieldTimeSeries, IFSPrescribedAtmosphere, RepeatYearIFS, MultiYearIFS
+export IFSFieldTimeSeries, IFSPrescribedAtmosphere, HourlyIFS
 
 using Oceananigans
 using Oceananigans.Units

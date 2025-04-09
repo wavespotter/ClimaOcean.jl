@@ -92,9 +92,8 @@ IFSNetCDFBackend(length) = IFSNetCDFBackend(1, length, nothing)
 Base.length(backend::IFSNetCDFBackend) = backend.length
 Base.summary(backend::IFSNetCDFBackend) = string("IFSNetCDFBackend(", backend.start, ", ", backend.length, ")")
 
-const IFSNetCDFFTS              = FlavorOfFTS{<:Any, <:Any, <:Any, <:Any, <:IFSNetCDFBackend}
-const IFSNetCDFFTSRepeatYear    = FlavorOfFTS{<:Any, <:Any, <:Any, <:Any, <:IFSNetCDFBackend{<:Metadata{<:RepeatYearIFS}}}
-const IFSNetCDFFTSMultipleYears = FlavorOfFTS{<:Any, <:Any, <:Any, <:Any, <:IFSNetCDFBackend{<:Metadata{<:MultiYearIFS}}}
+const IFSNetCDFFTS          = FlavorOfFTS{<:Any, <:Any, <:Any, <:Any, <:IFSNetCDFBackend}
+const IFSNetCDFFTSHourly    = FlavorOfFTS{<:Any, <:Any, <:Any, <:Any, <:IFSNetCDFBackend{<:Metadata{<:HourlyIFS}}}
 
 # Note that each file should have the variables
 #   - ds["time"]:     time coordinate
@@ -105,7 +104,7 @@ const IFSNetCDFFTSMultipleYears = FlavorOfFTS{<:Any, <:Any, <:Any, <:Any, <:IFSN
 #   - ds[shortname]:  the variable data
 
 # Simple case, only one file per variable, no need to deal with multiple files
-function set!(fts::IFSNetCDFFTSRepeatYear, backend=fts.backend)
+function set!(fts::IFSNetCDFFTSHourly, backend=fts.backend)
 
     metadata = backend.metadata
 
@@ -148,84 +147,12 @@ function set!(fts::IFSNetCDFFTSRepeatYear, backend=fts.backend)
     return nothing
 end
 
-# Tricky case: multiple files per variable -- one file per year --
-# we need to infer the file name from the metadata and split the data loading
-function set!(fts::IFSNetCDFFTSMultipleYears, backend=fts.backend)
-
-    metadata = backend.metadata
-
-    filename   = metadata_filename(metadata)
-    filename   = unique(filename)
-    name       = short_name(metadata)
-    start_date = first_date(metadata.dataset, metadata.name)
-
-    for file in filename
-
-        path = joinpath(metadata.dir, file)
-        ds = Dataset(path)
-
-        # This can be simplified once we start supporting a
-        # datetime `Clock` in Oceananigans
-        file_dates = ds["time"][:]
-        file_indices = 1:length(file_dates)
-        file_times = zeros(length(file_dates))
-        for (t, date) in enumerate(file_dates)
-            delta = date - start_date
-            delta = Second(delta).value
-            file_times[t] = delta
-        end
-
-        ftsn = time_indices(fts)
-        ftsn = collect(ftsn)
-
-        # Intersect the time indices with the file times
-        nn   = findall(n -> file_times[n] ∈ fts.times[ftsn], file_indices)
-        ftsn = findall(n -> fts.times[n] ∈ file_times[nn], ftsn)
-
-        if !isempty(nn)
-            # Nodes at the variable location
-            λc = ds["lon"][:]
-            φc = ds["lat"][:]
-            LX, LY, LZ = location(fts)
-            i₁, i₂, j₁, j₂, TX = compute_bounding_indices(nothing, nothing, fts.grid, LX, LY, λc, φc)
-
-
-            if issorted(nn)
-                data = ds[name][i₁:i₂, j₁:j₂, nn]
-            else
-                # The time indices may be cycling past 1; eg ti = [6, 7, 8, 1].
-                # However, DiskArrays does not seem to support loading data with unsorted
-                # indices. So to handle this, we load the data in chunks, where each chunk's
-                # indices are sorted, and then glue the data together.
-                m = findfirst(n -> n == 1, nn)
-                n1 = nn[1:m-1]
-                n2 = nn[m:end]
-
-                data1 = ds[name][i₁:i₂, j₁:j₂, n1]
-                data2 = ds[name][i₁:i₂, j₁:j₂, n2]
-                data = cat(data1, data2, dims=3)
-            end
-
-            close(ds)
-
-            # We need to set the time index for each file
-            # Find start index corresponding to the underlying data
-            for n in 1:length(nn)
-                copyto!(interior(fts, :, :, 1, ftsn[n]), data[:, :, n])
-            end
-        end
-    end
-
-    fill_halo_regions!(fts)
-
-    return nothing
-end
 
 new_backend(b::IFSNetCDFBackend, start, length) = IFSNetCDFBackend(start, length, b.metadata)
 
 """
     IFSFieldTimeSeries(variable_name, architecture=CPU(), FT=Float32;
-                         dataset = RepeatYearIFS(),
+                         dataset = HourlyIFS(),
                          dates = all_IFS_dates(version),
                          latitude = nothing,
                          longitude = nothing,
@@ -234,7 +161,7 @@ new_backend(b::IFSNetCDFBackend, start, length) = IFSNetCDFBackend(start, length
                          time_indexing = Cyclical())
 
 Return a `FieldTimeSeries` containing atmospheric reanalysis data for `variable_name`,
-which describes one of the variables from the Japanese 55-year atmospheric reanalysis
+which describes one of the variables from the IFS HRES 10-day or 15-day atmospheric forecast
 for driving ocean-sea ice models (IFS-do).
 
 The `variable_name`s (and their `shortname`s used in NetCDF files) available from the IFS-do are:
@@ -256,14 +183,10 @@ Keyword arguments
 
 - `architecture`: Architecture for the `FieldTimeSeries`. Default: CPU()
 
-- `dataset`: The data dataset; supported datasets are: `RepeatYearIFS()` and `MultiYearIFS()`.
-            `MultiYearIFS()` refers to the full length of the IFS-do dataset; `RepeatYearIFS()`
-            refers to the "repeat-year forcing" dataset derived from IFS-do. For more information
-            about the derivation of the repeat-year forcing dataset, see:
+- `dataset`: The data dataset; supported datasets are: `HourlyIFS()`
+            `HourlyIFS()` refers to the full length of the IFS-do dataset;
 
-   > Stewart et al. (2020). IFS-do-based repeat year forcing datasets for driving ocean–sea-ice models, _Ocean Modelling_, **147**, 101557, https://doi.org/10.1016/j.ocemod.2019.101557.
-
-   Default: `RepeatYearIFS()`.
+   Default: `HourlyIFS()`.
 
 - `start_date`: The starting date to use for the dataset. Default: `first_date(dataset, variable_name)`.
 
@@ -287,7 +210,7 @@ Keyword arguments
              Default: `InMemory()`.
 """
 function IFSFieldTimeSeries(variable_name::Symbol, architecture=CPU(), FT=Float32;
-                              dataset = RepeatYearIFS(),
+                              dataset = HourlyIFS(),
                               start_date = first_date(dataset, variable_name),
                               end_date = last_date(dataset, variable_name),
                               dir = download_IFS_cache,
@@ -304,17 +227,12 @@ end
 function IFSFieldTimeSeries(metadata::IFSMetadata, architecture=CPU(), FT=Float32;
                               latitude = nothing,
                               longitude = nothing,
-                              backend = InMemory(),
+			      backend = IFSNetCDFBackend(24), #InMemory(),
                               time_indexing = Cyclical())
 
 
-    # Cannot use `TotallyInMemory` backend with IFSMultipleYear dataset
-    if metadata.dataset isa MultiYearIFS && backend isa TotallyInMemory
-        msg = string("The `InMemory` backend is not supported for the MultiYearIFS dataset.")
-        throw(ArgumentError(msg))
-    end
-
     # First thing: we download the dataset!
+    # STEVE: does nothing - make sure data files are loaded to data directory specified above in arguments
     download_dataset(metadata)
 
     # Regularize the backend in case of `IFSNetCDFBackend`
@@ -395,8 +313,8 @@ function IFSFieldTimeSeries(metadata::IFSMetadata, architecture=CPU(), FT=Float3
     #   - ds[shortname]: the variable data
 
     # Nodes at the variable location
-    λc = ds["lon"][:]
-    φc = ds["lat"][:]
+    λc = ds["longitude"][:]
+    φc = ds["latitude"][:]
 
     # Interfaces for the "native" IFS grid
     λn = Array(ds["lon_bnds"][1, :])

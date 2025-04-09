@@ -6,7 +6,7 @@ IFSPrescribedAtmosphere(arch::Distributed, FT = Float32; kw...) =
 
 """
     IFSPrescribedAtmosphere([architecture = CPU(), FT = Float32];
-                              dataset = RepeatYearIFS(),
+                              dataset = HourlyIFS(),
                               start_date = first_date(dataset, :temperature),
                               end_date = last_date(dataset, :temperature),
                               backend = IFSNetCDFBackend(10),
@@ -20,7 +20,7 @@ The atmospheric data will be held in `IFSFieldTimeSeries` objects containing.
 For a detailed description of the keyword arguments, see the [`IFSFieldTimeSeries`](@ref) constructor.
 """
 function IFSPrescribedAtmosphere(architecture = CPU(), FT = Float32;
-                                   dataset = RepeatYearIFS(),
+                                   dataset = HourlyIFS(),
                                    start_date = first_date(dataset, :temperature),
                                    end_date = last_date(dataset, :temperature),
                                    backend = IFSNetCDFBackend(10),
@@ -32,7 +32,8 @@ function IFSPrescribedAtmosphere(architecture = CPU(), FT = Float32;
     kw = (; time_indexing, backend, start_date, end_date, dataset)
     kw = merge(kw, other_kw) 
 
-    # var_array=( 'airTemperature' 'airDensity' 'meanSeaLevelPressure' 'precipitationRate' 'seaSurfaceTemperature' 'windVelocity10MeterEastward' 'windVelocity10MeterNorthward' )
+    # var_array=( 'airTemperature' 'meanSeaLevelPressure' 'precipitationRate' 'windVelocity10MeterEastward' 'windVelocity10MeterNorthward' )
+    # (Defined via 'short_name()')
     ua  = IFSFieldTimeSeries(:eastward_velocity, architecture, FT;               kw...)
     va  = IFSFieldTimeSeries(:northward_velocity, architecture, FT;              kw...)
     Ta  = IFSFieldTimeSeries(:temperature, architecture, FT;                     kw...)
