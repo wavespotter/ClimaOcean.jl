@@ -34,6 +34,7 @@ export
     last_date,
     all_dates,
     JRA55FieldTimeSeries,
+    IFSFieldTimeSeries,
     ECCO_field, 
     ECCORestoring,
     MO_field, 
@@ -94,10 +95,11 @@ using .InitialConditions
 using .OceanSeaIceModels
 using .OceanSimulations
 using .SeaIceSimulations
-using .DataWrangling: JRA55, ECCO, MO
+using .DataWrangling: JRA55, IFS, ECCO, MO
 
 using ClimaOcean.OceanSeaIceModels: PrescribedAtmosphere
 using ClimaOcean.DataWrangling.JRA55: JRA55PrescribedAtmosphere, JRA55NetCDFBackend
+using ClimaOcean.DataWrangling.IFS: IFSPrescribedAtmosphere, IFSNetCDFBackend
 using ClimaOcean.DataWrangling.ECCO
 using ClimaOcean.DataWrangling.MO
 
