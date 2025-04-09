@@ -140,7 +140,7 @@ const MO_z = [
     5727.91,
 ]
 
-empty_MO_field(variable_name::Symbol; kw...) = empty_MO_field(Metadatum(variable_name, dataset=MOMonthly()); kw...)
+empty_MO_field(variable_name::Symbol; kw...) = empty_MO_field(Metadatum(variable_name, dataset=MODaily()); kw...)
 
 function empty_MO_field(metadata::MOMetadata;
                           architecture = CPU(), 
