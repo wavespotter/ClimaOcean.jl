@@ -88,7 +88,7 @@ include("MO_restoring.jl")
 #    -10.0,
 #      0.0,
 #]
-const_MO = [
+const MO_z = [
     0.494025, 
     1.541375, 
     2.645669, 
@@ -140,8 +140,6 @@ const_MO = [
     5274.784,     
     5727.917, 
 ]
-
-MO_z = -const_MO
 
 empty_MO_field(variable_name::Symbol; kw...) = empty_MO_field(Metadatum(variable_name, dataset=MO4Monthly()); kw...)
 
