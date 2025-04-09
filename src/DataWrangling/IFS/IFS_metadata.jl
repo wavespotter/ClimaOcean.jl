@@ -25,10 +25,10 @@ const IFSMetadatum   = Metadatum{<:Union{<:MultiYearIFS, <:HourlyIFS}}
 const varname::String = "seaSurfaceTemperature"
 const YYYYMMDD::String = "20250318"
 const HH::String = "00"
-const year::Int = 2025
-const month::Int = 3
-const day::Int = 18
-const hour::Int = 0
+const yyyy::Int = 2025
+const mm::Int = 3
+const dd::Int = 18
+const hh::Int = 0
 const datadir::String = "/fsx/climaocean/data"
 const model::String = "ECMWFHRes"
 const forecast_hour = nothing
@@ -52,7 +52,7 @@ function all_dates(::HourlyIFS, name)
     if name == :river_freshwater_flux || name == :iceberg_freshwater_flux
         return DateTime(1990, 1, 1) : Day(1) : DateTime(1990, 12, 31)
     else
-        return DateTime(year, month, day, hour, 0, 0) : Hour(1) : DateTime(year, month, day+forecast_days, hour, 0, 0)
+        return DateTime(yyyy, mm, dd, hh, 0, 0) : Hour(1) : DateTime(yyyy, month, dd+forecast_days, hh, 0, 0)
 	# Hourly 1-90 (3.75 days)
 	# 3-hourly 93-145
 	# 6-hourly 145-240
