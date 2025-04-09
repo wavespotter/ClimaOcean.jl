@@ -136,8 +136,9 @@ const MO_z = [
     3992.48,
     4405.22,
     4833.29,
-    5274.78,   
-    5727.91]
+    5274.78,
+    5727.91,
+]
 
 empty_MO_field(variable_name::Symbol; kw...) = empty_MO_field(Metadatum(variable_name, dataset=MOMonthly()); kw...)
 
