@@ -52,7 +52,7 @@ function all_dates(::HourlyIFS, name)
     if name == :river_freshwater_flux || name == :iceberg_freshwater_flux
         return DateTime(1990, 1, 1) : Day(1) : DateTime(1990, 12, 31)
     else
-        return DateTime(yyyy, mm, dd, hh, 0, 0) : Hour(1) : DateTime(yyyy, month, dd+forecast_days, hh, 0, 0)
+        return DateTime(yyyy, mm, dd, hh, 0, 0) : Hour(1) : DateTime(yyyy, mm, dd+forecast_days, hh, 0, 0)
 	# Hourly 1-90 (3.75 days)
 	# 3-hourly 93-145
 	# 6-hourly 145-240
